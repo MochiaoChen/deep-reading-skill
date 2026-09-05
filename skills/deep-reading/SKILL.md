@@ -41,6 +41,9 @@ license: MIT
 你读 PDF/EPUB/TXT，产出①脉络②亮点④联系，把③心得留成问题清单交给用户。
 产出的是地图，不是内力。开工前用一句话说明这个差别，别默默降级。
 
+拿到 PDF/EPUB 先跑工作流 C 拆成分章文件，**不要一次把整本书读进上下文**——
+「读一章，记一章」既是方法要求，也是上下文预算的要求。
+
 模式一和模式二可以混：用户读了一半读不下去，剩下的你来读并出问题清单。
 
 ---
@@ -155,23 +158,62 @@ license: MIT
 
 ---
 
-## 工作流 C：导入电子书划线
+## 工作流 C：把 PDF / EPUB 拆成分章文本
+
+```bash
+python3 scripts/book_to_text.py 书.epub --toc              # 先看结构和字数
+python3 scripts/book_to_text.py 书.pdf --split ./chapters  # 一章一个文件
+```
+
+`--toc` 先跑，它会告诉你这本书有几章、每章多少字——据此决定 Step 2 一次读几章。
+`--split` 之后按文件逐章读，这是模式二的标准姿势。
+
+**EPUB** 用标准库解析，会从 `nav.xhtml` / `toc.ncx` 取真实章节名。
+
+**PDF** 优先调用系统里的 `pdftotext` / `mutool` / `pypdf` / `pdfminer` / `PyMuPDF`；
+一个都没装时退回内置的纯标准库提取器（zlib + ToUnicode CMap）。内置提取器能处理
+大多数含嵌入文本的 PDF，**包括中文 CID 字体**。
+
+两种它处理不了的情况，脚本会明确报错而不是吐乱码：
+
+- **字体没有 ToUnicode 表** → 报「可读字符仅 N%」，并给出三条出路
+- **扫描版 PDF（纯图片）** → 报「没有提取到任何文字」
+
+这两种情况的正确应对是：让用户 `brew install poppler` 或 `pip install pypdf`
+（装完重跑即可自动生效），**或者直接用你自己的 Read 工具按页读这个 PDF**。
+Read 工具不需要用户安装任何东西，是最稳的兜底——别忘了这条路。
+
+---
+
+## 工作流 D：导入电子书划线
 
 电子阅读器最大的好处是能自动抽出批注和高亮。
 
 ```bash
-python3 scripts/extract_highlights.py "/Volumes/Kindle/documents/My Clippings.txt" --format markdown
+python3 scripts/extract_highlights.py --list               # 哪些书有划线
+python3 scripts/extract_highlights.py --source apple       # Apple Books
+python3 scripts/extract_highlights.py "My Clippings.txt"   # Kindle
 ```
 
-支持 Kindle `My Clippings.txt`（中英文版）与通用导出文本。按书分组、自动去重（同一段反复划线只留最完整的一条）。
+**Apple Books** 直接读本机标注库，不需要用户导出任何东西。能带出书名、作者、
+划线原文、附注、**高亮颜色**和时间。不给任何参数时默认就走这条路。
+
+读不到数据库时脚本会报出三个可能原因，其中最常见的是**终端没有「完全磁盘访问
+权限」**——遇到这个报错，直接把系统设置的路径念给用户，别自己瞎试。
+
+**Kindle** 认 `My Clippings.txt`（中英文版皆可），按书分组、自动去重（同一段反复
+划线只留最完整的一条）。
+
+有人用颜色编码（黄=事实、蓝=存疑……），`--style 黄` 可以只取某一色。
 
 导入后**不要**直接当笔记交付——划线只是原料，还要过 Step 2 的四要素。
 
-顺带提醒用户：**读电子书一定要多批注**，别浪费那无限的空白处。（费马当年要是读的电子书，大概就不会因为「书页空白太小」而不写下证明了。）
+顺带提醒用户：**读电子书一定要多批注**，别浪费那无限的空白处。（费马当年要是读的
+电子书，大概就不会因为「书页空白太小」而不写下证明了。）
 
 ---
 
-## 工作流 D：维护笔记库
+## 工作流 E：维护笔记库
 
 ```bash
 python3 scripts/link_notes.py ~/notes/reading --index        # 生成/更新 INDEX.md
@@ -179,7 +221,8 @@ python3 scripts/link_notes.py ~/notes/reading --backlinks    # 写入反向链�
 python3 scripts/link_notes.py ~/notes/reading --report       # 孤岛笔记、断链、待写清单
 ```
 
-用户读到一个新课题后，会在接下来几天里反复撞见它（就像小时候学会一个成语后到处看见它）。**撞见就整理进库**，这是笔记网络长起来的方式。
+用户读到一个新课题后，会在接下来几天里反复撞见它（就像小时候学会一个成语后到处
+看见它）。**撞见就整理进库**，这是笔记网络长起来的方式。
 
 ---
 

@@ -72,10 +72,13 @@ cp -r deep-reading-skill/skills/deep-reading ~/.claude/skills/
 我在读《卧底经济学》，陪我强力研读一遍
 ```
 ```
+这本 EPUB 帮我拆成章，我们一章一章过
+```
+```
 这是我读《思考，快与慢》的笔记，帮我看看行不行
 ```
 ```
-把我 Kindle 的划线导出整理一下
+把我 Apple Books 里的划线整理一下
 ```
 ```
 帮我看看笔记库里哪些书是孤岛
@@ -90,19 +93,51 @@ cp -r deep-reading-skill/skills/deep-reading ~/.claude/skills/
 
 ---
 
-## 附带的两个脚本
+## 附带的三个脚本
+
+三个脚本**只依赖 Python 3 标准库**，不用 pip install 任何东西。
+
+### 1. 划线导入 —— Apple Books / Kindle
 
 ```bash
-# Kindle / 电子书划线导出 → 研读原料（自动去重、区分划线与批注）
-python3 scripts/extract_highlights.py "/Volumes/Kindle/documents/My Clippings.txt"
+python3 scripts/extract_highlights.py --list              # 哪些书有划线
+python3 scripts/extract_highlights.py --source apple      # Apple Books（默认）
+python3 scripts/extract_highlights.py --source apple --style 黄
+python3 scripts/extract_highlights.py "My Clippings.txt"  # Kindle
+```
 
-# 维护笔记库的 [[链接]] 网络
+**Apple Books** 直接读本机标注库，不需要你导出任何东西 —— 书名、作者、划线原文、
+附注、**高亮颜色**、时间都能带出来。用颜色编码的人（黄=事实、蓝=存疑）可以 `--style` 分色取。
+
+**Kindle** 认 `My Clippings.txt`，中英文版都行，按书分组并自动去重（同一段反复划线只留最完整的一条）。
+
+> 读不到 Apple Books 数据库最常见的原因是终端没有「完全磁盘访问权限」，脚本会直接把系统设置路径告诉你。
+
+### 2. 正文提取 —— PDF / EPUB
+
+```bash
+python3 scripts/book_to_text.py 书.epub --toc              # 先看章节结构和字数
+python3 scripts/book_to_text.py 书.pdf --split ./chapters  # 一章一个文件
+```
+
+**EPUB** 纯标准库解析，从 `nav.xhtml` / `toc.ncx` 取真实章节名。
+
+**PDF** 优先用系统里已有的 `pdftotext` / `mutool` / `pypdf` / `pdfminer` / `PyMuPDF`；
+一个都没装时退回**内置的纯标准库提取器**（zlib + ToUnicode CMap），能处理大多数含嵌入文本的
+PDF，包括中文 CID 字体。
+
+遇到字体缺 ToUnicode 表或扫描件时，它**报错而不是吐乱码** —— 并告诉你三条出路
+（装 poppler / 装 pypdf / 直接把 PDF 交给 Claude 的 Read 工具按页读）。
+
+默认按章切分，因为「读一章，记一章」既是方法要求，也是上下文预算的要求。
+
+### 3. 笔记库织网
+
+```bash
 python3 scripts/link_notes.py ~/notes/reading --report      # 孤岛 / 待写 / 枢纽笔记
 python3 scripts/link_notes.py ~/notes/reading --index       # 生成 INDEX.md
 python3 scripts/link_notes.py ~/notes/reading --backlinks   # 写入反向链接
 ```
-
-只依赖 Python 3 标准库，不用装任何东西。
 
 `--report` 里有一节叫「**该写文章了**」：当同一个议题在三篇以上的笔记里出现不同结论时它会提醒你 —— 到了那个层次，你已经和作者完全平等，甚至可以俯视他们、评判他们的高下。
 
@@ -121,8 +156,9 @@ skills/deep-reading/
 │   ├── note-template.md            # 笔记模板
 │   └── library-index-template.md   # 笔记库索引模板
 └── scripts/
-    ├── extract_highlights.py
-    └── link_notes.py
+    ├── extract_highlights.py       # Apple Books / Kindle 划线导入
+    ├── book_to_text.py             # EPUB / PDF → 分章文本（零依赖）
+    └── link_notes.py               # [[链接]] 网络
 ```
 
 ---
