@@ -1,0 +1,11 @@
+{
+  "name": "deep-reading-marketplace",
+  "owner": { "name": "MochiaoChen" },
+  "plugins": [
+    {
+      "name": "deep-reading",
+      "source": "./",
+      "description": "强力研读 — 把非虚构书读成能取代原书的笔记（脉络/亮点/心得/联系四要素）"
+    }
+  ]
+}

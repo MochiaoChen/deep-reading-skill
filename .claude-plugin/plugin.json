@@ -1,0 +1,9 @@
+{
+  "name": "deep-reading",
+  "version": "1.0.0",
+  "description": "强力研读 — 把非虚构书读成能取代原书的笔记（脉络/亮点/心得/联系四要素）",
+  "author": { "name": "MochiaoChen" },
+  "homepage": "https://github.com/MochiaoChen/deep-reading-skill",
+  "license": "MIT",
+  "keywords": ["reading", "notes", "读书笔记", "强力研读", "deep-reading"]
+}
